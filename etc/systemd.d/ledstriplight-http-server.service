@@ -1,0 +1,38 @@
+# LED Strip Light Flask HTTP Server Service
+# This systemd service runs the LED Strip Light Flask HTTP Server as a daemon
+# 
+# Installation:
+#   1. Copy this file to /etc/systemd/system/ledstriplight-http-server.service
+#   2. Run: sudo systemctl daemon-reload
+#   3. Run: sudo systemctl enable ledstriplight-http-server.service
+#   4. Run: sudo systemctl start ledstriplight-http-server.service
+#
+# Management:
+#   - Start:   sudo systemctl start ledstriplight-http-server.service
+#   - Stop:    sudo systemctl stop ledstriplight-http-server.service
+#   - Restart: sudo systemctl restart ledstriplight-http-server.service
+#   - Status:  sudo systemctl status ledstriplight-http-server.service
+#   - Logs:    sudo journalctl -u ledstriplight-http-server.service -f
+
+[Unit]
+Description=LED Strip Light Flask HTTP Server
+After=network.target
+# Ensure pigpio daemon is running before starting this service
+Wants=pigpiod.service
+After=pigpiod.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/raspberry/ledstriplight/src
+ExecStart=/usr/bin/python3 -u ./http_server.py
+StandardOutput=append:/var/log/ledstriplight.log
+StandardError=inherit
+Restart=always
+RestartSec=10
+SyslogIdentifier=http_server
+Environment=FLASK_ENV=production
+
+[Install]
+WantedBy=multi-user.target

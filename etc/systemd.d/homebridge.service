@@ -1,0 +1,35 @@
+# Homebridge HomeKit Server Service
+# This systemd service runs the Homebridge HomeKit Server as a daemon
+# 
+# Installation:
+#   1. Copy this file to /etc/systemd/system/homebridge.service
+#   2. Run: sudo systemctl daemon-reload
+#   3. Run: sudo systemctl enable homebridge.service
+#   4. Run: sudo systemctl start homebridge.service
+#
+# Management:
+#   - Start:   sudo systemctl start homebridge.service
+#   - Stop:    sudo systemctl stop homebridge.service
+#   - Restart: sudo systemctl restart homebridge.service
+#   - Status:  sudo systemctl status homebridge.service
+#   - Logs:    sudo journalctl -u homebridge.service -f
+
+[Unit]
+Description=Homebridge HomeKit Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/.homebridge
+ExecStart=/usr/local/bin/homebridge
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+RestartSec=10
+SyslogIdentifier=homebridge
+
+[Install]
+WantedBy=multi-user.target

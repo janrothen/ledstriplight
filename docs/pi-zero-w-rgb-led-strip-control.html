@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to control a RGB LED Strip Light with a Raspberry Pi Zero W</title>
+  <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" />
+</head>
+
+<body>
+  <nav>
+    <a href="./index.html">Home</a> |
+    <a href="./pi-zero-w-rgb-led-strip-control.html">Hardware Guide</a> |
+    <a href="https://github.com/janrothen/ledstriplight">GitHub Repo</a>
+  </nav>
+
+  <h1>How to control a RGB LED Strip Light with a Raspberry Pi Zero W</h1>
+  <p>In this guide, you'll learn how to wire a 12 V RGB LED strip light to your Raspberry Pi (Zero W) and then control each
+    color channel both from the command line and with Python.</p>
+
+  <h2>What you'll need</h2>
+  <ul>
+    <li><strong>Raspberry Pi Zero W</strong> (any other Pi model will work, too)</li>
+    <li><strong>12 V RGB LED strip light</strong> (e.g. SMD5050)</li>
+    <li><strong>3x TIP120 Darlington transistors</strong></li>
+    <li><strong>12 V power supply</strong> capable of supplying enough current for your strip (check its specs for
+      amperage per meter)</li>
+    <li><strong>Jumper wires</strong> for all connections</li>
+  </ul>
+  <h2>What you are going to build</h2>
+  <div style="text-align: center; margin: 20px 0;">
+    <img src="images/wiring_schematic.png" alt="Wiring schematic"
+      style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 5px;">
+    <p style="font-style: italic; color: #666;">Wiring schematic showing the connections between
+      power supply, Raspberry Pi, TIP120 transistors, and RGB LED strip light</p>
+  </div>
+  <h2>1. Identify the LED strip light's wires</h2>
+  <p>At one end of the LED strip light you'll see four leads or pads, typically labeled:</p>
+  <pre>12V  G   R   B</pre>
+  <ul>
+    <li><code>12V (or +)</code> goes directly to the positive terminal of your 12V supply.</li>
+    <li><code>G</code>, <code>R</code>, and <code>B</code> each feed one color channel.</li>
+  </ul>
+
+  <h2>2. Wire the TIP120 transistors</h2>
+  <p>For each color channel:</p>
+  <ul>
+    <li><strong>Collector (middle pin)</strong> → strip's G, R, or B wire</li>
+    <li><strong>Emitter (one outer pin)</strong> → common ground (tie back to your 12 V supply's negative)</li>
+    <li><strong>Base (the other outer pin)</strong> → Raspberry Pi GPIO pin</li>
+  </ul>
+  <p><em>Tip: insert a ~1 kΩ resistor between each GPIO pin and its transistor base. The base resistor protects both
+      your Pi and the transistor, while still allowing enough current to switch the LED strip light fully on.</em></p>
+
+  <h2>3. Tie all grounds together</h2>
+  <p>Connect the Pi's GND pin and the 12 V supply's negative terminal to the same ground rail—that way, the TIP120
+    emitters and the Pi share a common reference.</p>
+
+  <h2>4. Assign GPIO pins</h2>
+  <div style="text-align: center; margin: 20px 0;">
+    <img src="images/raspberry_pi_zero.png" alt="Raspberry Pi Zero GPIO Pinout"
+      style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 5px;">
+    <p style="font-style: italic; color: #666;">Raspberry Pi Zero GPIO Pinout</p>
+  </div>
+  <p>On the Pi Zero's 40-pin header, pick three GPIOs for your colors. I'm using the following GPIO pin mapping:</p>
+  <ul>
+    <li><code>GPIO 27</code> → <span style="color:red">red</span></li>
+    <li><code>GPIO 17</code> → <span style="color:green">green</span></li>
+    <li><code>GPIO 22</code> → <span style="color:blue">blue</span></li>
+  </ul>
+  <p>And use any GND pin to complete the common ground.</p>
+  <h2>5. Power up and test</h2>
+  <ol>
+    <li>Power your 12 V supply (which now feeds +12 V to the strip and ground to the TIP120s).</li>
+    <li>Boot the Raspberry Pi normally.</li>
+    <li>First you will need to start the <code>pigpiod</code> daemon which is required for GPIO control:
+      <pre>sudo pigpiod</pre>
+    </li>
+    <li>Now that everything is wired up, you can control the LED strip using the <code>pigs</code> command (from the pigpio library), which allows PWM control of GPIO pins.</li>
+    <li>PWM value range:
+      <ul>
+        <li>255 = full brightness</li>
+        <li>0 = off</li>
+        <li>Values in between dim the color</li>
+      </ul>
+    </li>
+  <li>Example: Set strip to <span style="color:orange">orange</span> (RGB 255, 165, 0):
+<pre>
+pigs p 27 255   # Red to full
+pigs p 17 165   # Green to medium
+pigs p 22 0     # Blue off</pre>
+This will mix red and green to produce orange.
+</li>
+  </ol>
+
+  <h2>6. Python code</h2>
+  <p>The python code for controlling the LED strip light is available in the GitHub repository <a
+      href="https://github.com/janrothen/ledstriplight" target="_blank"
+      rel="noopener">https://github.com/janrothen/ledstriplight</a>.</p>
+  <footer>
+    <p>© 2025 Jan Rothen – <a href="https://github.com/janrothen/ledstriplight">Source on GitHub</a></p>
+  </footer>
+    </body>
+
+</html>
