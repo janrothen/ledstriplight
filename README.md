@@ -4,10 +4,11 @@
 Feature-rich Raspberry Pi project for controlling an RGB LED strip light. Includes:
 
 - Web-based REST API (Flask) for remote control (on/off, color, brightness, effects)
+- Web-based interface for manual remote control
 - Homebridge integration for Apple HomeKit and Siri voice control
+- Command-line interface for scripting and manual control
 - Multiple built-in LED effects (breathing, fade, color cycle, random, and more)
 - Time-based color profiles and scheduled automation (systemd, cron)
-- Command-line interface for scripting and manual control
 - Modular, testable Python codebase with hardware abstraction and full unit test suite
 
 Easily automate, script, or integrate your LED strip with smart home platforms and custom workflows.
@@ -119,7 +120,21 @@ ledstriplight/
 
 ## REST API (Flask Server)
 
-The project includes a Flask server for remote control via HTTP endpoints:
+The project includes a Flask server for remote control via HTTP endpoints and a web-based control interface.
+
+### Web Interface
+
+A responsive web interface is available for controlling the LED strip through your browser:
+
+- **Access:** Navigate to `http://localhost:5000` (or `http://YOUR_PI_IP:5000` from other devices)
+- **Features:**
+  - Power control (On/Off) with visual status indicators
+  - Color picker and preset color buttons (Red, Green, Blue, White, Yellow, Magenta, Cyan)
+  - Brightness slider with real-time adjustment
+  - Live status updates and error handling
+  - Mobile-friendly responsive design
+
+### API Endpoints
 
 **Endpoints:**
 
@@ -130,6 +145,12 @@ The project includes a Flask server for remote control via HTTP endpoints:
 - `POST /color/<value>` — Set color (hex string or named color)
 - `GET /brightness` — Get current brightness (0–100)
 - `POST /brightness/<int:value>` — Set brightness (0–100)
+
+**Starting the server:**
+```bash
+cd src
+./http_server.py
+```
 
 Example usage:
 ```bash

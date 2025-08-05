@@ -5,34 +5,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LED Strip Light</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌈</text></svg>">
   <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" />
 </head>
 
 <body>
   <nav>
     <a href="./index.html">Home</a> |
-    <a href="./pi-zero-w-rgb-led-strip-control.html">Hardware Guide</a> |
-    <a href="https://github.com/janrothen/ledstriplight">GitHub Repo</a>
+    <a href="./pi-zero-w-rgb-led-strip-control.html">Hardware guide</a> |
+    <a href="https://github.com/janrothen/ledstriplight">GitHub repo</a>
   </nav>
 
   <h1>🌈 LED Strip Light</h1>
   <p>
     Welcome! This project lets you drive RGB LED strips from a Raspberry Pi Zero W.
+    It includes:
   </p>
+  <ul>
+    <li>Web-based REST API (Flask) for remote control (on/off, color, brightness, effects)</li>
+    <li>Web-based interface for manual remote control</li>
+    <li>Homebridge integration for Apple HomeKit and Siri voice control</li>
+    <li>Command-line interface for scripting and manual control</li>
+    <li>Multiple built-in LED effects (breathing, fade, color cycle, random, and more)</li>
+    <li>Time-based color profiles and scheduled automation (systemd, cron)</li>
+    <li>Modular, testable Python codebase with hardware abstraction and full unit test suite</li>
+  </ul>
+  
+  <h2>Preview</h2>
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin: 20px 0;">
+    <div style="text-align: center;">
+      <img src="images/homekit.jpg" alt="HomeKit integration" style="max-width: 300px; width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <p style="font-style: italic; color: #666;">HomeKit integration</p>
+    </div>
+    <div style="text-align: center;">
+      <img src="images/web_interface.jpg" alt="Web interface" style="max-width: 300px; width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <p style="font-style: italic; color: #666;">Web control interface</p>
+    </div>
+  </div>
+  
   <h2>Getting Started</h2>
   <ul>
     <li><strong>Installation:</strong> <code>pip install -r requirements.txt</code></li>
-    <li><strong>Configuration:</strong> edit <code>config.conf</code> in the repo root</li>
-    <li><strong>Usage:</strong> <code>python3 run.py --profile morning</code></li>
+    <li><strong>Configuration:</strong> edit <code>config.conf</code> in the <code>src</code> directory</li>
+    <li><strong>Usage:</strong> <code>./run.py profile</code></li>
   </ul>
+  
   <h2>Documentation</h2>
   <ul>
-    <li><a href="README.md">Full README on GitHub</a></li>
-    <li><a href="pi-zero-w-rgb-led-strip-control.html">Hardware Setup Guide</a></li>
-    <li><a href="docs/systemd.html">Systemd setup</a></li>
+    <li><a href="https://github.com/janrothen/ledstriplight/blob/main/README.md">README on GitHub</a></li>
+    <li><a href="pi-zero-w-rgb-led-strip-control.html">Hardware setup guide</a></li>
   </ul>
   <footer>
     <p>© 2025 Jan Rothen – <a href="https://github.com/janrothen/ledstriplight">Source on GitHub</a></p>
   </footer>
 </body>
+
 </html>

@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌈</text></svg>">
   <title>How to control a RGB LED Strip Light with a Raspberry Pi Zero W</title>
   <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" />
 </head>
@@ -11,13 +12,13 @@
 <body>
   <nav>
     <a href="./index.html">Home</a> |
-    <a href="./pi-zero-w-rgb-led-strip-control.html">Hardware Guide</a> |
-    <a href="https://github.com/janrothen/ledstriplight">GitHub Repo</a>
+    <a href="./pi-zero-w-rgb-led-strip-control.html">Hardware guide</a> |
+    <a href="https://github.com/janrothen/ledstriplight">GitHub repo</a>
   </nav>
 
   <h1>How to control a RGB LED Strip Light with a Raspberry Pi Zero W</h1>
-  <p>In this guide, you'll learn how to wire a 12 V RGB LED strip light to your Raspberry Pi (Zero W) and then control each
-    color channel both from the command line and with Python.</p>
+  <p>In this guide, you'll learn how to wire a 12 V RGB LED strip light to your Raspberry Pi Zero W and then control
+    each color channel both from the command line and with Python.</p>
 
   <h2>What you'll need</h2>
   <ul>
@@ -28,6 +29,7 @@
       amperage per meter)</li>
     <li><strong>Jumper wires</strong> for all connections</li>
   </ul>
+
   <h2>What you are going to build</h2>
   <div style="text-align: center; margin: 20px 0;">
     <img src="images/wiring_schematic.png" alt="Wiring schematic"
@@ -35,6 +37,7 @@
     <p style="font-style: italic; color: #666;">Wiring schematic showing the connections between
       power supply, Raspberry Pi, TIP120 transistors, and RGB LED strip light</p>
   </div>
+
   <h2>1. Identify the LED strip light's wires</h2>
   <p>At one end of the LED strip light you'll see four leads or pads, typically labeled:</p>
   <pre>12V  G   R   B</pre>
@@ -54,8 +57,8 @@
       your Pi and the transistor, while still allowing enough current to switch the LED strip light fully on.</em></p>
 
   <h2>3. Tie all grounds together</h2>
-  <p>Connect the Pi's GND pin and the 12 V supply's negative terminal to the same ground rail—that way, the TIP120
-    emitters and the Pi share a common reference.</p>
+  <p>Connect the Raspberry Pi's GND pin and the 12 V supply's negative terminal to the same ground rail. That way, the TIP120
+    emitters and the Raspberry Pi share a common reference.</p>
 
   <h2>4. Assign GPIO pins</h2>
   <div style="text-align: center; margin: 20px 0;">
@@ -70,6 +73,7 @@
     <li><code>GPIO 22</code> → <span style="color:blue">blue</span></li>
   </ul>
   <p>And use any GND pin to complete the common ground.</p>
+  
   <h2>5. Power up and test</h2>
   <ol>
     <li>Power your 12 V supply (which now feeds +12 V to the strip and ground to the TIP120s).</li>
@@ -77,7 +81,8 @@
     <li>First you will need to start the <code>pigpiod</code> daemon which is required for GPIO control:
       <pre>sudo pigpiod</pre>
     </li>
-    <li>Now that everything is wired up, you can control the LED strip using the <code>pigs</code> command (from the pigpio library), which allows PWM control of GPIO pins.</li>
+    <li>Now that everything is wired up, you can control the LED strip using the <code>pigs</code> command (from the
+      pigpio library), which allows PWM control of GPIO pins.</li>
     <li>PWM value range:
       <ul>
         <li>255 = full brightness</li>
@@ -85,13 +90,13 @@
         <li>Values in between dim the color</li>
       </ul>
     </li>
-  <li>Example: Set strip to <span style="color:orange">orange</span> (RGB 255, 165, 0):
-<pre>
+    <li>Example: Set strip to <span style="color:orange">orange</span> (RGB 255, 165, 0):
+      <pre>
 pigs p 27 255   # Red to full
 pigs p 17 165   # Green to medium
 pigs p 22 0     # Blue off</pre>
-This will mix red and green to produce orange.
-</li>
+      This will mix red and green to produce orange.
+    </li>
   </ol>
 
   <h2>6. Python code</h2>
@@ -101,6 +106,6 @@ This will mix red and green to produce orange.
   <footer>
     <p>© 2025 Jan Rothen – <a href="https://github.com/janrothen/ledstriplight">Source on GitHub</a></p>
   </footer>
-    </body>
+</body>
 
 </html>

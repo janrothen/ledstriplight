@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-from flask import Flask, Response
+from flask import Flask, Response, send_from_directory
 
 from config.config_manager import ConfigManager
 from led.gpio_service import GPIOService
 from led.led_strip_light_controller import LEDStripLightController
 from led.color import Color
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='')
 config_manager = ConfigManager()
 pin_assignment = config_manager.get_pin_assignment()
 gpio_service = GPIOService(
@@ -16,6 +16,10 @@ gpio_service = GPIOService(
             blue_pin=pin_assignment.blue
         )
 led_controller = LEDStripLightController(gpio_service=gpio_service)
+
+@app.route("/")
+def index():
+    return send_from_directory('static', 'index.html')
 
 @app.route("/on", methods=["POST"])
 def turn_on():
