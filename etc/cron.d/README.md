@@ -14,4 +14,5 @@ sudo cp ledstriplight /etc/cron.d/
 ### 2. Set proper permissions
 ```bash
 sudo chmod 644 /etc/cron.d/ledstriplight
+sudo chown root:root /etc/cron.d/ledstriplight
 ```
