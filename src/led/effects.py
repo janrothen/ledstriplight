@@ -2,11 +2,40 @@
 
 import logging
 from time import sleep, monotonic
-from typing import Protocol, Iterable, Optional
+from typing import Protocol, Iterable, Optional, Callable
 from .color import Color
 
 FADE_STEP_MS: float = 10.0  # 10 ms per step ≈ 100 Hz
 DEFAULT_EFFECT_DURATION_MS: int = 2000  # Default duration in milliseconds
+
+# ── Easing functions ───────────────────────────────────────────────────────
+def ease_linear(t: float) -> float:
+    return t
+
+def ease_in_out_sine(t: float) -> float:
+    # Smooth start and end (default)
+    from math import cos, pi
+    return 0.5 * (1 - cos(pi * t))
+
+def ease_in_quad(t: float) -> float:
+    return t * t
+
+def ease_out_quad(t: float) -> float:
+    return t * (2 - t)
+
+# ── Gamma-aware channel interpolation ─────────────────────────────────────
+def _interp_channel(v0: int, v1: int, t: float, gamma: Optional[float]) -> int:
+    """Interpolate one 8-bit channel from v0→v1 at progress t in [0,1].
+    If gamma is provided, interpolate in linear light and convert back.
+    """
+    if gamma and gamma > 0:
+        a = (v0 / 255.0) ** gamma
+        b = (v1 / 255.0) ** gamma
+        lin = a + (b - a) * t
+        enc = lin ** (1.0 / gamma)
+        return int(round(enc * 255.0))
+    # Linear (no gamma)
+    return int(round(v0 + (v1 - v0) * t))
 
 
 class StripLike(Protocol):
@@ -72,13 +101,17 @@ def fade_effect(
     color_start: Color = Color.BLACK,
     color_end: Color = Color.WHITE,
     duration: int = DEFAULT_EFFECT_DURATION_MS,
+    *,
+    ease: Callable[[float], float] = ease_in_out_sine,
+    gamma: Optional[float] = None,
 ) -> None:
-    """Fade smoothly from color_start to color_end over the given duration (ms)."""
+    """Fade from color_start to color_end over duration (ms).
+    Options:
+      - ease: easing function mapping t∈[0,1]→[0,1] (e.g. ease_in_out_sine)
+      - gamma: if set (e.g. 2.2), interpolate in linear light for smoother fades
+    """
     r_start, g_start, b_start = color_start.rgb
     r_end, g_end, b_end = color_end.rgb
-    r_diff = r_end - r_start
-    g_diff = g_end - g_start
-    b_diff = b_end - b_start
 
     # Guard against too-small duration to avoid division by zero
     steps = max(1, int(float(duration) / FADE_STEP_MS))
@@ -94,12 +127,12 @@ def fade_effect(
             logging.debug("Fading interrupted at step %d/%d", step + 1, steps)
             return
 
-        # Normalized progress (1..steps) → (0,1]
-        t = (step + 1) / steps
+        # Normalized progress (1..steps) → (0,1], then apply easing
+        t = ease((step + 1) / steps)
 
-        r_current = int(round(r_start + (r_diff * t)))
-        g_current = int(round(g_start + (g_diff * t)))
-        b_current = int(round(b_start + (b_diff * t)))
+        r_current = _interp_channel(r_start, r_end, t, gamma)
+        g_current = _interp_channel(g_start, g_end, t, gamma)
+        b_current = _interp_channel(b_start, b_end, t, gamma)
 
         strip.set_color(Color.from_tuple((r_current, g_current, b_current)))
 
