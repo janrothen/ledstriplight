@@ -140,7 +140,7 @@ Examples:
             # Prefer a dedicated runner method if available
             if hasattr(effect_runner, 'run_campfire_effect'):
                 effect_runner.run_campfire_effect(
-                    duration_ms=args.duration_ms,
+                    duration=args.duration_ms,
                     base_color=base_color,
                     update_hz=args.update_hz,
                     min_brightness=args.min_brightness,
