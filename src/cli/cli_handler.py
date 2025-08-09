@@ -52,6 +52,7 @@ class CLIHandler:
 Examples:
   %(prog)s profile
   %(prog)s breathing --color red --duration 3000
+  %(prog)s campfire --base-color #ff9329 --duration 30000
   %(prog)s random --interval 2000
   %(prog)s cycle --colors red,green,blue --duration 2000
   %(prog)s fade --from black --to white --duration 5000
@@ -77,7 +78,32 @@ Examples:
         random_parser = subparsers.add_parser('random', help='Random color changes')
         random_parser.add_argument('--interval', type=int, default=2000,
                                   help='Interval between color changes in milliseconds (default: 2000)')
-        
+
+        # Campfire effect
+        campfire_parser = subparsers.add_parser('campfire', help='Warm, natural flicker (candle/campfire)')
+        campfire_parser.add_argument('--base-color', dest='base_color', default='#ff9329',
+                                     help='Base warm color (name or hex, default: #ff9329)')
+        campfire_parser.add_argument('--duration', dest='duration_ms', type=int, default=None,
+                                     help='Total duration in milliseconds (default: run until interrupted)')
+        campfire_parser.add_argument('--update-hz', type=int, default=60,
+                                     help='Update rate in Hz (default: 60)')
+        campfire_parser.add_argument('--min-brightness', type=float, default=0.15,
+                                     help='Minimum perceived brightness 0..1 (default: 0.15)')
+        campfire_parser.add_argument('--max-brightness', type=float, default=1.0,
+                                     help='Maximum perceived brightness 0..1 (default: 1.0)')
+        campfire_parser.add_argument('--hue-jitter', type=float, default=0.02,
+                                     help='Hue variation around base color (default: 0.02)')
+        campfire_parser.add_argument('--saturation', type=float, default=None,
+                                     help='Override saturation 0..1 (default: base color saturation)')
+        campfire_parser.add_argument('--spark-chance', type=float, default=0.02,
+                                     help='Chance per tick of a brief spark 0..1 (default: 0.02)')
+        campfire_parser.add_argument('--spark-gain', type=float, default=1.35,
+                                     help='Spark intensity multiplier (default: 1.35)')
+        campfire_parser.add_argument('--tau-ms', type=int, default=120,
+                                     help='Smoothing time constant in ms (default: 120)')
+        campfire_parser.add_argument('--gamma', type=float, default=None,
+                                     help='Perceptual gamma (e.g., 2.2). Default: effect default')
+
         # Cycle effect
         cycle_parser = subparsers.add_parser('cycle', help='Cycle through colors')
         cycle_parser.add_argument('--colors', default='red,green,blue',
@@ -101,22 +127,61 @@ Examples:
         """Execute the specified effect with parsed arguments."""
         if args.effect == 'profile':
             effect_runner.run_profile_effect(duration=args.duration)
-        
+
         elif args.effect == 'breathing':
             color = CLIHandler.parse_color(args.color)
             effect_runner.run_breathing_effect(color=color, duration=args.duration)
-        
+
         elif args.effect == 'random':
             effect_runner.run_random_effect(interval=args.interval)
-        
+
+        elif args.effect == 'campfire':
+            base_color = CLIHandler.parse_color(args.base_color)
+            # Prefer a dedicated runner method if available
+            if hasattr(effect_runner, 'run_campfire_effect'):
+                effect_runner.run_campfire_effect(
+                    duration_ms=args.duration_ms,
+                    base_color=base_color,
+                    update_hz=args.update_hz,
+                    min_brightness=args.min_brightness,
+                    max_brightness=args.max_brightness,
+                    hue_jitter=args.hue_jitter,
+                    saturation=args.saturation,
+                    spark_chance=args.spark_chance,
+                    spark_gain=args.spark_gain,
+                    tau_ms=args.tau_ms,
+                    gamma=args.gamma,
+                )
+            else:
+                # Fallback: call the effect directly if the runner has a generic interface
+                try:
+                    from led.effects import campfire_effect
+                    effect_runner.strip.run_sequence(
+                        campfire_effect,
+                        effect_runner.strip,
+                        duration_ms=args.duration_ms,
+                        base_color=base_color,
+                        update_hz=args.update_hz,
+                        min_brightness=args.min_brightness,
+                        max_brightness=args.max_brightness,
+                        hue_jitter=args.hue_jitter,
+                        saturation=args.saturation,
+                        spark_chance=args.spark_chance,
+                        spark_gain=args.spark_gain,
+                        tau_ms=args.tau_ms,
+                        gamma=args.gamma,
+                    )
+                except Exception as e:
+                    raise RuntimeError("EffectRunner lacks run_campfire_effect and generic run_sequence fallback failed") from e
+
         elif args.effect == 'cycle':
             colors = CLIHandler.parse_colors(args.colors)
             effect_runner.run_cycle_effect(colors=colors, duration=args.duration)
-        
+
         elif args.effect == 'fade':
             from_color = CLIHandler.parse_color(args.from_color)
             to_color = CLIHandler.parse_color(args.to_color)
             effect_runner.run_fade_effect(from_color=from_color, to_color=to_color, duration=args.duration)
-        
+
         else:
             raise ValueError(f"Unknown effect: {args.effect}")

@@ -3,7 +3,7 @@
 import logging
 from typing import Any, List, Optional
 from .color import Color
-from .effects import breathing_effect, fade_effect, random_color_effect, color_cycle_effect, FADE_PRESET_SMOOTH
+from .effects import breathing_effect, campfire_effect, fade_effect, random_color_effect, color_cycle_effect, FADE_PRESET_SMOOTH
 
 
 class EffectRunner:
@@ -31,7 +31,12 @@ class EffectRunner:
         """Run breathing effect."""
         logging.info(f"Starting breathing effect with color: {color}")
         self.strip.run_sequence(breathing_effect, self.strip, color, duration, **FADE_PRESET_SMOOTH)
-    
+
+    def run_campfire_effect(self, colors: Optional[List[Color]] = None) -> None:
+        """Run campfire effect."""
+        logging.info(f"Starting campfire effect with colors: {[str(c) for c in colors]}")
+        self.strip.run_sequence(campfire_effect, self.strip, base_color=Color(255,147,41), **FADE_PRESET_SMOOTH)
+
     def run_random_effect(self, interval: int = 2000) -> None:
         """Run random color effect."""
         logging.info(f"Starting random color effect with interval: {interval}ms")
