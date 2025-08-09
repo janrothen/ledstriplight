@@ -4,7 +4,7 @@ LED strip effects and transitions (breathing, fades, color cycles) with
 optional easing functions and gamma-aware interpolation.
 
 Exports:
-  - Core: fade_effect, breathing_effect, color_cycle_effect, random_color_effect
+  - Core: fade_effect, breathing_effect, color_cycle_effect, random_color_effect, campfire_effect
   - Easing: ease_linear, ease_in_out_sine (default), ease_in_quad, ease_out_quad
   - Presets: FADE_PRESET_SMOOTH, FADE_PRESET_LINEAR, FADE_PRESET_SNAPPY
   - Types & constants: StripLike, FADE_STEP_MS, DEFAULT_EFFECT_DURATION_MS
@@ -36,6 +36,10 @@ import logging
 from time import sleep, monotonic
 from typing import Protocol, Iterable, Optional, Callable
 from .color import Color
+
+import random
+import colorsys
+import math
 
 FADE_STEP_MS: float = 10.0  # 10 ms per step ≈ 100 Hz
 DEFAULT_EFFECT_DURATION_MS: int = 2000  # Default duration in milliseconds
@@ -124,6 +128,7 @@ def breathing_effect(
         if hold_ms:
             sleep(hold_ms / 1000.0)
 
+
 def random_color_effect(strip: StripLike, interval: int = DEFAULT_EFFECT_DURATION_MS) -> None:
     """Changes colors randomly at specified intervals.
 
@@ -137,6 +142,100 @@ def random_color_effect(strip: StripLike, interval: int = DEFAULT_EFFECT_DURATIO
     while not strip.is_interrupted():
         strip.set_color(Color.random_pastel())
         sleep(interval / 1000.0)  # Convert ms to seconds
+
+
+# --- Campfire/candle flicker effect ---
+def campfire_effect(
+    strip: StripLike,
+    *,
+    duration_ms: Optional[int] = None,
+    base_color: Color = Color(255, 147, 41),  # candle/amber
+    update_hz: int = 60,
+    min_brightness: float = 0.15,
+    max_brightness: float = 1.00,
+    hue_jitter: float = 0.02,
+    saturation: Optional[float] = None,
+    spark_chance: float = 0.02,
+    spark_gain: float = 1.35,
+    tau_ms: int = 120,
+    gamma: Optional[float] = SRGB_GAMMA,
+) -> None:
+    """Warm, natural flicker like a campfire/candle.
+
+    The effect low‑pass filters random intensity and slight hue shifts to
+    produce organic flicker. Occasional "sparks" briefly boost intensity.
+
+    Args:
+        strip: Target strip-like object.
+        duration_ms: Optional total run time; if None, runs until interrupted.
+        base_color: Warm base color around which flicker happens.
+        update_hz: Update rate (e.g., 60 Hz).
+        min_brightness: Lower bound of perceived brightness (0..1).
+        max_brightness: Upper bound of perceived brightness (0..1).
+        hue_jitter: Max hue variation around base (0..~0.08 is subtle).
+        saturation: Optional fixed saturation override (0..1). Defaults to base.
+        spark_chance: Chance per tick of a brief intensity boost.
+        spark_gain: Multiplier applied on a spark (clamped to max_brightness).
+        tau_ms: Time constant for the exponential smoothing (ms).
+        gamma: Optional gamma for perceptual mapping (e.g., 2.2 for sRGB).
+    """
+    # Convert base color to HSV in 0..1
+    r0, g0, b0 = base_color.rgb
+    h0, s0, v0 = colorsys.rgb_to_hsv(r0 / 255.0, g0 / 255.0, b0 / 255.0)
+    if saturation is not None:
+        s0 = max(0.0, min(1.0, float(saturation)))
+
+    # State
+    current_h = h0
+    current_v = max(min_brightness, min(max_brightness, v0))
+    target_h = h0
+    target_v = current_v
+
+    period = 1.0 / max(1, update_hz)
+    end_time = None if duration_ms is None else (monotonic() + duration_ms / 1000.0)
+
+    last = monotonic()
+    while not strip.is_interrupted():
+        if end_time is not None and monotonic() >= end_time:
+            break
+
+        now = monotonic()
+        dt = now - last
+        last = now
+
+        # Randomly walk targets within bounds
+        target_h = h0 + random.uniform(-hue_jitter, hue_jitter)
+        # Conservative step in brightness target
+        target_v += random.uniform(-0.25, 0.25) * (max_brightness - min_brightness)
+        target_v = max(min_brightness, min(max_brightness, target_v))
+
+        # Occasionally create a brief spark
+        if random.random() < spark_chance:
+            target_v = min(max_brightness, max(target_v, current_v) * spark_gain)
+
+        # Exponential smoothing toward targets (low‑pass filter)
+        alpha = 1.0 - math.exp(-dt / max(1e-6, (tau_ms / 1000.0)))
+        current_h += (target_h - current_h) * alpha
+        current_v += (target_v - current_v) * alpha
+
+        # HSV back to RGB (0..1 floats)
+        r_f, g_f, b_f = colorsys.hsv_to_rgb(current_h % 1.0, s0, current_v)
+
+        # Apply gamma if requested: PWM ≈ linear light = perceived^gamma
+        if gamma and gamma > 0:
+            r = int(round((r_f ** gamma) * 255.0))
+            g = int(round((g_f ** gamma) * 255.0))
+            b = int(round((b_f ** gamma) * 255.0))
+        else:
+            r = int(round(r_f * 255.0))
+            g = int(round(g_f * 255.0))
+            b = int(round(b_f * 255.0))
+
+        strip.set_color(Color.from_tuple((r, g, b)))
+
+        # Maintain a steady update cadence
+        next_due = now + period
+        sleep(max(0.0, next_due - monotonic()))
 
 def color_cycle_effect(
     strip: StripLike,
@@ -246,4 +345,5 @@ __all__ = [
     "breathing_effect",
     "color_cycle_effect",
     "random_color_effect",
+    "campfire_effect",
 ]
