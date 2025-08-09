@@ -7,7 +7,7 @@ Feature-rich Raspberry Pi project for controlling an RGB LED strip light. Includ
 - Web-based interface for manual remote control
 - Homebridge integration for Apple HomeKit and Siri voice control
 - Command-line interface for scripting and manual control
-- Multiple built-in LED effects (breathing, fade, color cycle, random, and more)
+- Multiple built-in LED effects (breathing, fade, color cycle, random, campfire, candle, and more)
 - Time-based color profiles and scheduled automation (systemd, cron)
 - Modular, testable Python codebase with hardware abstraction and full unit test suite
 

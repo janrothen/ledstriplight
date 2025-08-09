@@ -6,6 +6,7 @@ from .color import Color
 from .effects import (
     breathing_effect,
     campfire_effect,
+    candle_effect,
     fade_effect,
     random_color_effect,
     color_cycle_effect,
@@ -102,6 +103,53 @@ class EffectRunner:
             kwargs["gamma"] = gamma
 
         self.strip.run_sequence(campfire_effect, self.strip, **kwargs)
+
+    def run_candle_effect(
+        self,
+        *,
+        duration: Optional[int] = None,
+        base_color: Color = Color(255, 147, 41),
+        update_hz: int = 40,
+        min_brightness: float = 0.35,
+        max_brightness: float = 0.85,
+        hue_jitter: float = 0.008,
+        saturation: Optional[float] = None,
+        spark_chance: float = 0.005,
+        spark_gain: float = 1.10,
+        tau_ms: int = 300,
+        gamma: Optional[float] = None,
+    ) -> None:
+        """Run gentle candle effect (wrapper around campfire with calmer defaults)."""
+        logging.info(
+            "Starting candle effect: duration=%s base=%s update_hz=%d min_brightness=%.2f max_brightness=%.2f "
+            "hue_jitter=%.3f saturation=%s spark_chance=%.3f spark_gain=%.2f tau_ms=%d gamma=%s",
+            duration,
+            base_color,
+            update_hz,
+            min_brightness,
+            max_brightness,
+            hue_jitter,
+            saturation,
+            spark_chance,
+            spark_gain,
+            tau_ms,
+            gamma,
+        )
+        kwargs = dict(
+            duration_ms=duration,
+            base_color=base_color,
+            update_hz=update_hz,
+            min_brightness=min_brightness,
+            max_brightness=max_brightness,
+            hue_jitter=hue_jitter,
+            saturation=saturation,
+            spark_chance=spark_chance,
+            spark_gain=spark_gain,
+            tau_ms=tau_ms,
+        )
+        if gamma is not None:
+            kwargs["gamma"] = gamma
+        self.strip.run_sequence(candle_effect, self.strip, **kwargs)
 
     def run_random_effect(self, interval: int = 2000) -> None:
         """Run random color effect."""

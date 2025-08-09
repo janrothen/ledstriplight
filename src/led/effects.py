@@ -237,6 +237,44 @@ def campfire_effect(
         next_due = now + period
         sleep(max(0.0, next_due - monotonic()))
 
+# --- Candle effect (gentler, slower flicker variant) ---
+def candle_effect(
+    strip: StripLike,
+    *,
+    duration_ms: Optional[int] = None,
+    base_color: Color = Color(255, 147, 41),  # warm candle amber
+    update_hz: int = 40,
+    min_brightness: float = 0.35,
+    max_brightness: float = 0.85,
+    hue_jitter: float = 0.008,
+    saturation: Optional[float] = None,
+    spark_chance: float = 0.005,
+    spark_gain: float = 1.10,
+    tau_ms: int = 300,
+    gamma: Optional[float] = SRGB_GAMMA,
+) -> None:
+    """Softer, slower candle flame variant of campfire.
+
+    Tweaked parameters provide a gentler wander with fewer/briefer sparks
+    and narrower brightness + hue ranges.
+
+    Args mirror campfire_effect with calmer defaults.
+    """
+    campfire_effect(
+        strip,
+        duration_ms=duration_ms,
+        base_color=base_color,
+        update_hz=update_hz,
+        min_brightness=min_brightness,
+        max_brightness=max_brightness,
+        hue_jitter=hue_jitter,
+        saturation=saturation,
+        spark_chance=spark_chance,
+        spark_gain=spark_gain,
+        tau_ms=tau_ms,
+        gamma=gamma,
+    )
+
 def color_cycle_effect(
     strip: StripLike,
     colors: Optional[Iterable[Color]] = None,
@@ -346,4 +384,5 @@ __all__ = [
     "color_cycle_effect",
     "random_color_effect",
     "campfire_effect",
+    "candle_effect",
 ]
