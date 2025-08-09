@@ -62,8 +62,8 @@ EASE_DEFAULT = ease_in_out_sine  # friendly alias for the default easing
 
 # Preset kwargs to reduce call-site noise (feel free to tweak gamma)
 FADE_PRESET_SMOOTH = {"ease": ease_in_out_sine, "gamma": SRGB_GAMMA}  # natural breath-like
-FADE_PRESET_LINEAR = {"ease": ease_linear,       "gamma": None} # straight linear
-FADE_PRESET_SNAPPY = {"ease": ease_out_quad,     "gamma": SRGB_GAMMA}  # quick-in, gentle-out
+FADE_PRESET_SNAPPY = {"ease": ease_out_quad,    "gamma": SRGB_GAMMA}  # quick-in, gentle-out
+FADE_PRESET_LINEAR = {"ease": ease_linear,      "gamma": None} # straight linear
 
 # Example usage:
 # fade_effect(strip, Color.BLACK, Color.WHITE, 2000, **FADE_PRESET_SMOOTH)
