@@ -3,7 +3,15 @@
 import logging
 from typing import Any, List, Optional
 from .color import Color
-from .effects import breathing_effect, campfire_effect, fade_effect, random_color_effect, color_cycle_effect, FADE_PRESET_SMOOTH
+from .effects import (
+    breathing_effect,
+    campfire_effect,
+    fade_effect,
+    random_color_effect,
+    color_cycle_effect,
+    FADE_PRESET_SMOOTH,
+    SRGB_GAMMA,
+)
 
 
 class EffectRunner:
@@ -32,10 +40,68 @@ class EffectRunner:
         logging.info(f"Starting breathing effect with color: {color}")
         self.strip.run_sequence(breathing_effect, self.strip, color, duration, **FADE_PRESET_SMOOTH)
 
-    def run_campfire_effect(self, colors: Optional[List[Color]] = None) -> None:
-        """Run campfire effect."""
-        logging.info(f"Starting campfire effect with colors: {[str(c) for c in colors]}")
-        self.strip.run_sequence(campfire_effect, self.strip, base_color=Color(255,147,41), **FADE_PRESET_SMOOTH)
+    def run_campfire_effect(
+        self,
+        *,
+        duration: Optional[int] = None,
+        base_color: Color = Color(255, 147, 41),
+        update_hz: int = 60,
+        min_brightness: float = 0.15,
+        max_brightness: float = 1.0,
+        hue_jitter: float = 0.02,
+        saturation: Optional[float] = None,
+        spark_chance: float = 0.02,
+        spark_gain: float = 1.35,
+        tau_ms: int = 120,
+        gamma: Optional[float] = None,
+    ) -> None:
+        """Run campfire (candle/fire) effect.
+
+        Args:
+            duration: Total run time in ms (None = until interrupted)
+            base_color: Base warm color to flicker around
+            update_hz: Update frequency
+            min_brightness / max_brightness: Bounds (0..1)
+            hue_jitter: Hue variation around base
+            saturation: Override saturation (0..1) or None to use base
+            spark_chance: Probability of brief spark per tick
+            spark_gain: Multiplier for spark brightness
+            tau_ms: Smoothing time constant
+            gamma: Perceptual gamma (None = effect default)
+        """
+        logging.info(
+            "Starting campfire effect: duration=%s base=%s update_hz=%d min_brightness=%.2f max_brightness=%.2f "
+            "hue_jitter=%.3f saturation=%s spark_chance=%.3f spark_gain=%.2f tau_ms=%d gamma=%s",
+            duration,
+            base_color,
+            update_hz,
+            min_brightness,
+            max_brightness,
+            hue_jitter,
+            saturation,
+            spark_chance,
+            spark_gain,
+            tau_ms,
+            gamma,
+        )
+
+        # Only pass gamma if explicitly provided so the effect default stays intact
+        kwargs = dict(
+            duration_ms=duration,
+            base_color=base_color,
+            update_hz=update_hz,
+            min_brightness=min_brightness,
+            max_brightness=max_brightness,
+            hue_jitter=hue_jitter,
+            saturation=saturation,
+            spark_chance=spark_chance,
+            spark_gain=spark_gain,
+            tau_ms=tau_ms,
+        )
+        if gamma is not None:
+            kwargs["gamma"] = gamma
+
+        self.strip.run_sequence(campfire_effect, self.strip, **kwargs)
 
     def run_random_effect(self, interval: int = 2000) -> None:
         """Run random color effect."""
