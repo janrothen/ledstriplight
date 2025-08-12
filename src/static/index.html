@@ -24,6 +24,59 @@
             color: #333;
             margin-bottom: 30px;
         }
+        .effect-card {
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
+            padding: 12px 16px 16px;
+            margin: 12px 0;
+            background: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .effect-card h4 {
+            margin: 0 0 10px;
+            font-size: 16px;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .effect-fields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 120px;
+        }
+        .field-group label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #777;
+        }
+        .field-inline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .effect-actions {
+            margin-top: 8px;
+        }
+        .effect-card button {
+            margin: 0;
+        }
+        .divider-label {
+            font-size: 11px;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #666;
+        }
         .control-group {
             margin-bottom: 25px;
             padding: 20px;
@@ -152,6 +205,61 @@
                 <span id="brightnessValue">100</span>%
                 <button onclick="setBrightness()">Set Brightness</button>
             </div>
+        </div>
+
+        <!-- Effects Control -->
+        <div class="control-group">
+            <h3>Effects</h3>
+            <div id="activeEffect" class="status-display" style="background:#e2e3e5;color:#333;border:1px solid #d6d8db;">Active Effect: none</div>
+            <div style="margin-bottom:10px;">
+                <button onclick="startEffect('campfire')">Campfire</button>
+                <button onclick="startEffect('candle')">Candle</button>
+                <button onclick="startEffect('random')">Random</button>
+                <button onclick="startEffect('cycle')">Cycle</button>
+            </div>
+            <div class="effect-card" id="breathingCard">
+                <h4>Breathing Effect <span class="divider-label">smooth fade in/out</span></h4>
+                <div class="effect-fields">
+                    <div class="field-group" style="min-width:90px;">
+                        <label for="breathingColor">Color</label>
+                        <input type="color" id="breathingColor" value="#ff0000">
+                    </div>
+                    <div class="field-group">
+                        <label for="breathingDuration">Duration (ms per half)</label>
+                        <div class="field-inline">
+                            <input type="number" id="breathingDuration" value="2000" min="100" step="100" style="width:110px;">
+                        </div>
+                    </div>
+                    <div class="field-group" style="align-self:flex-end;">
+                        <label>&nbsp;</label>
+                        <button onclick="startBreathing()">Start</button>
+                    </div>
+                </div>
+            </div>
+            <div class="effect-card" id="fadeCard">
+                <h4>Fade Effect <span class="divider-label">one-way transition</span></h4>
+                <div class="effect-fields">
+                    <div class="field-group" style="min-width:90px;">
+                        <label for="fadeFrom">From</label>
+                        <input type="color" id="fadeFrom" value="#000000">
+                    </div>
+                    <div class="field-group" style="min-width:90px;">
+                        <label for="fadeTo">To</label>
+                        <input type="color" id="fadeTo" value="#ffffff">
+                    </div>
+                    <div class="field-group">
+                        <label for="fadeDuration">Duration (ms)</label>
+                        <div class="field-inline">
+                            <input type="number" id="fadeDuration" value="5000" min="100" step="100" style="width:110px;">
+                        </div>
+                    </div>
+                    <div class="field-group" style="align-self:flex-end;">
+                        <label>&nbsp;</label>
+                        <button onclick="startFade()">Start</button>
+                    </div>
+                </div>
+            </div>
+            <button class="off-button" onclick="stopEffect()">Stop Effect</button>
         </div>
 
         <!-- Refresh Status -->
@@ -291,12 +399,66 @@
             updateStatus();
             updateCurrentColor();
             updateCurrentBrightness();
+            updateActiveEffect();
         }
 
         // Initialize page
         window.onload = function() {
             refreshAll();
         };
+
+        // --- Effects API integration ------------------------------------
+        async function updateActiveEffect() {
+            try {
+                const res = await fetch('/effects');
+                if (!res.ok) return;
+                const data = await res.json();
+                const active = data.active || 'none';
+                const el = document.getElementById('activeEffect');
+                el.textContent = `Active Effect: ${active}`;
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        async function startEffect(name, params={}) {
+            try {
+                const res = await fetch(`/effects/${name}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: Object.keys(params).length ? JSON.stringify(params) : '{}'
+                });
+                if (!res.ok) {
+                    const err = await res.text();
+                    alert('Failed to start effect: ' + err);
+                }
+                updateActiveEffect();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function stopEffect() {
+            try {
+                await fetch('/effects/stop', { method: 'POST' });
+                updateActiveEffect();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function startBreathing() {
+            const color = document.getElementById('breathingColor').value.replace('#','');
+            const duration = parseInt(document.getElementById('breathingDuration').value, 10) || 2000;
+            startEffect('breathing', { color, duration });
+        }
+
+        function startFade() {
+            const from = document.getElementById('fadeFrom').value.replace('#','');
+            const to = document.getElementById('fadeTo').value.replace('#','');
+            const duration = parseInt(document.getElementById('fadeDuration').value, 10) || 5000;
+            startEffect('fade', { from, to, duration });
+        }
     </script>
 </body>
 </html>
