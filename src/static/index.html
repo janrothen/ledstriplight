@@ -3,8 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LED Strip">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌈</text></svg>">
     <title>LED Strip Light Controller</title>
+    <script>
+        // Generate a PNG apple-touch-icon with a rainbow emoji for iOS Home Screen
+        (function createAppIcons() {
+            function makeIcon(size, emoji, bg = '#ffffff') {
+                const c = document.createElement('canvas');
+                c.width = c.height = size;
+                const ctx = c.getContext('2d');
+                // Background
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, size, size);
+                // Emoji
+                const fontSize = Math.floor(size * 0.78); // scale emoji to canvas
+                ctx.font = `${fontSize}px Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, system-ui, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(emoji, size / 2, size / 2 + Math.floor(size * 0.02));
+                return c.toDataURL('image/png');
+            }
+
+            function ensureLink(rel, sizes, href) {
+                let link = document.querySelector(`link[rel="${rel}"]${sizes ? `[sizes=\"${sizes}\"]` : ''}`);
+                if (!link) {
+                    link = document.createElement('link');
+                    link.rel = rel;
+                    if (sizes) link.sizes = sizes;
+                    document.head.appendChild(link);
+                }
+                link.href = href;
+            }
+
+            // Create icons once DOM is ready
+            const run = () => {
+                try {
+                    const apple180 = makeIcon(180, '🌈');
+                    ensureLink('apple-touch-icon', '180x180', apple180);
+
+                    // Also update standard favicon with PNG for broad compatibility
+                    const fav64 = makeIcon(64, '🌈');
+                    ensureLink('icon', null, fav64);
+                } catch (_) {
+                    // Ignore errors; the fallback SVG favicon link remains
+                }
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', run);
+            } else {
+                run();
+            }
+        })();
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
