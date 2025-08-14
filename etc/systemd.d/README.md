@@ -1,15 +1,14 @@
 # Systemd service files overview
 
-This directory contains three systemd service files for managing the LED strip light controller on your Raspberry Pi:
+This directory contains systemd service files for managing the LED strip light controller on your Raspberry Pi:
 
-- **ledstriplight.service**: Main service to run the LED strip controller as a background daemon. Handles startup, shutdown, and automatic restarts.
-- **ledstriplight-http-server.service**: Runs the LED Strip Light Flask HTTP Server as a daemon (required if you want to use Homebridge)
-- **homebridge.service**: Runs the Homebridge HomeKit Server as a daemon
+- **ledstriplight-http-server.service**: Runs the LED Strip Light Flask HTTP Server as a daemon (primary service for API/Web UI and automation)
+- **homebridge.service**: Runs the Homebridge HomeKit Server as a daemon (optional)
 
 # LED Strip Light Service Installation Guide
 
 ## Overview
-This systemd services run the LED strip light controller application as a background daemon on your Raspberry Pi.
+These systemd services run your LED Strip Light HTTP server (and optional Homebridge) as background daemons on your Raspberry Pi.
 
 ## Prerequisites
 - Raspberry Pi with Raspberry Pi OS
@@ -19,15 +18,15 @@ This systemd services run the LED strip light controller application as a backgr
 
 ## Installation steps
 
-### 1. Install the service file
-Copy the service file to the systemd directory:
+### 1. Install the HTTP server service file
+Copy the HTTP server service file to the systemd directory:
 ```bash
-sudo cp ledstriplight.service /etc/systemd/system/
+sudo cp ledstriplight-http-server.service /etc/systemd/system/
 ```
 
 ### 2. Set proper permissions
 ```bash
-sudo chmod 644 /etc/systemd/system/ledstriplight.service
+sudo chmod 644 /etc/systemd/system/ledstriplight-http-server.service
 ```
 
 ### 3. Reload systemd
@@ -36,49 +35,49 @@ Tell systemd to reload its configuration:
 sudo systemctl daemon-reload
 ```
 
-### 4. Enable the service
+### 4. Enable the HTTP server service
 Enable the service to start automatically on boot:
 ```bash
-sudo systemctl enable ledstriplight.service
+sudo systemctl enable ledstriplight-http-server.service
 ```
 
-### 5. Start the service
+### 5. Start the HTTP server service
 Start the service immediately:
 ```bash
-sudo systemctl start ledstriplight.service
+sudo systemctl start ledstriplight-http-server.service
 ```
 
 ## Service management commands
 
 | Command | Description |
 |---------|-------------|
-| `sudo systemctl start ledstriplight.service` | Start the service |
-| `sudo systemctl stop ledstriplight.service` | Stop the service |
-| `sudo systemctl restart ledstriplight.service` | Restart the service |
-| `sudo systemctl status ledstriplight.service` | Check service status |
-| `sudo systemctl enable ledstriplight.service` | Enable auto-start on boot |
-| `sudo systemctl disable ledstriplight.service` | Disable auto-start on boot |
+| `sudo systemctl start ledstriplight-http-server.service` | Start the service |
+| `sudo systemctl stop ledstriplight-http-server.service` | Stop the service |
+| `sudo systemctl restart ledstriplight-http-server.service` | Restart the service |
+| `sudo systemctl status ledstriplight-http-server.service` | Check service status |
+| `sudo systemctl enable ledstriplight-http-server.service` | Enable auto-start on boot |
+| `sudo systemctl disable ledstriplight-http-server.service` | Disable auto-start on boot |
 
 ## Monitoring and troubleshooting
 
 ### View service status
 ```bash
-sudo systemctl status ledstriplight.service
+sudo systemctl status ledstriplight-http-server.service
 ```
 
 ### View live logs
 ```bash
-sudo journalctl -u ledstriplight.service -f
+sudo journalctl -u ledstriplight-http-server.service -f
 ```
 
 ### View recent logs
 ```bash
-sudo journalctl -u ledstriplight.service --since "1 hour ago"
+sudo journalctl -u ledstriplight-http-server.service --since "1 hour ago"
 ```
 
 ### View all logs
 ```bash
-sudo journalctl -u ledstriplight.service --no-pager
+sudo journalctl -u ledstriplight-http-server.service --no-pager
 ```
 
 ## Configuration notes
@@ -93,9 +92,8 @@ sudo journalctl -u ledstriplight.service --no-pager
 
 ### Service won't start
 1. Check if the working directory exists: `ls -la /home/pi/raspberry/ledstriplight/`
-2. Check if `run.py` is executable: `ls -la /home/pi/raspberry/ledstriplight/src/run.py`
-3. Verify pigpiod is running: `sudo systemctl status pigpiod`
-4. Check for Python errors: `sudo journalctl -u ledstriplight.service`
+2. Verify pigpiod is running: `sudo systemctl status pigpiod`
+3. Check for Python errors: `sudo journalctl -u ledstriplight-http-server.service`
 
 ### Permission issues
 If you get permission errors, ensure:
@@ -105,15 +103,15 @@ If you get permission errors, ensure:
 ### Service keeps restarting
 Check the logs for errors:
 ```bash
-sudo journalctl -u ledstriplight.service --since "10 minutes ago"
+sudo journalctl -u ledstriplight-http-server.service --since "10 minutes ago"
 ```
 
 ## Uninstalling
 
-To remove the service:
+To remove the HTTP server service:
 ```bash
-sudo systemctl stop ledstriplight.service
-sudo systemctl disable ledstriplight.service
-sudo rm /etc/systemd/system/ledstriplight.service
+sudo systemctl stop ledstriplight-http-server.service
+sudo systemctl disable ledstriplight-http-server.service
+sudo rm /etc/systemd/system/ledstriplight-http-server.service
 sudo systemctl daemon-reload
 ```

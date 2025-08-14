@@ -1,17 +1,20 @@
 # File: /etc/cron.d/ledstriplight
-# Purpose: Automatically start/stop the `ledstriplight` systemd service at set times.
+# Purpose: Trigger LED actions via local Flask server (always-on http_server)
+# Requires: ledstriplight HTTP server systemd unit running (e.g. ledstriplight-http-server.service)
 # Owner: root:root, Permissions: 644 (readable by root & cron daemon)
 
-# File: /etc/cron.d/ledstriplight
-# Purpose: Automatically start/stop the `ledstriplight` systemd service at set times.
-# Owner: root:root, Permissions: 644 (readable by root & cron daemon)
+SHELL=/bin/sh
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+CURL=/usr/bin/curl
+BASE_URL=http://localhost:5000
+LOG=/var/log/ledstriplight-cron.log
 
-# START
-45 06 * * 1-5  root  /bin/systemctl start ledstriplight >> /tmp/log/ledstriplight-cron.log 2>&1   # weekdays (Mon–Fri)
-30 07 * * 6,7  root  /bin/systemctl start ledstriplight >> /tmp/log/ledstriplight-cron.log 2>&1   # weekends (Sat & Sun)
-05 17 * * *    root  /bin/systemctl start ledstriplight >> /tmp/log/ledstriplight-cron.log 2>&1   # daily
+# --- START (profile fade to active morning/evening color) -----------------
+45 06 * * 1-5  root  $CURL -sS -m 10 -H 'Content-Type: application/json' -d '{"duration":12000}' -X POST $BASE_URL/effects/profile >> $LOG 2>&1  # weekdays (Mon–Fri)
+30 07 * * 6,7  root  $CURL -sS -m 10 -H 'Content-Type: application/json' -d '{"duration":12000}' -X POST $BASE_URL/effects/profile >> $LOG 2>&1  # weekends (Sat & Sun)
+05 17 * * *    root  $CURL -sS -m 10 -H 'Content-Type: application/json' -d '{"duration":12000}' -X POST $BASE_URL/effects/profile >> $LOG 2>&1  # daily (evening)
 
-# STOP
-30 09 * * 1-5  root  /bin/systemctl stop  ledstriplight >> /tmp/log/ledstriplight-cron.log 2>&1   # weekdays (Mon–Fri)
-30 10 * * 6,7  root  /bin/systemctl stop  ledstriplight >> /tmp/log/ledstriplight-cron.log 2>&1   # weekends (Sat & Sun)
-30 22 * * *    root  /bin/systemctl stop  ledstriplight >> /tmp/log/ledstriplight-cron.log 2>&1   # daily
+# --- STOP (turn off LEDs and stop any running effect) ---------------------
+30 09 * * 1-5  root  $CURL -sS -m 10 -X POST $BASE_URL/off >> $LOG 2>&1  # weekdays (Mon–Fri)
+30 10 * * 6,7  root  $CURL -sS -m 10 -X POST $BASE_URL/off >> $LOG 2>&1  # weekends (Sat & Sun)
+30 22 * * *    root  $CURL -sS -m 10 -X POST $BASE_URL/off >> $LOG 2>&1  # daily (night)

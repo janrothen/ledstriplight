@@ -13,9 +13,10 @@ class LEDStripLightController(object):
         self._gpio_service = gpio_service
         self._interrupt = False
         self._sequence = None
+        self._last_color = None
 
     def switch_on(self) -> None:
-        self.set_color(Color.WARM_YELLOW)
+        self.set_color(self._last_color or Color.WARM_YELLOW)
 
     def switch_off(self) -> None:
         self.interrupt()
@@ -39,6 +40,8 @@ class LEDStripLightController(object):
         return self._gpio_service.get_color()
 
     def set_color(self, color: Color = Color.WARM_YELLOW) -> None:
+        if not color.is_black():
+            self._last_color = color
         self._gpio_service.set_color(color)
     
     def get_brightness_percentage(self) -> int:

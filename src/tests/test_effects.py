@@ -89,7 +89,7 @@ class TestEffects:
         with patch('led.effects.sleep'):
             with patch('led.color.Color.random') as mock_random:
                 mock_random.return_value = Color.RED
-                random_color_effect(mock_strip, interval=100)
+                random_color_effect(mock_strip, duration=100)
         
         # Should have called set_color with random colors
         assert mock_strip.set_color.call_count >= 1

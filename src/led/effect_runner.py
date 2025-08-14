@@ -11,7 +11,6 @@ from .effects import (
     random_color_effect,
     color_cycle_effect,
     FADE_PRESET_SMOOTH,
-    SRGB_GAMMA,
 )
 
 

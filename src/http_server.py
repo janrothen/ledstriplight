@@ -6,6 +6,7 @@ from config.config_manager import ConfigManager
 from led.gpio_service import GPIOService
 from led.led_strip_light_controller import LEDStripLightController
 from led.effect_runner import EffectRunner
+from led.profile_manager import ProfileManager
 from led.color import Color
 
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -17,7 +18,8 @@ gpio_service = GPIOService(
             blue_pin=pin_assignment.blue
         )
 led_controller = LEDStripLightController(gpio_service=gpio_service)
-effect_runner = EffectRunner(led_controller)
+profile_manager = ProfileManager(config_manager)
+effect_runner = EffectRunner(led_controller, profile_manager)
 current_effect = {"name": None}
 
 @app.route("/")
@@ -82,7 +84,7 @@ def list_effects():
     return jsonify({
         "active": current_effect["name"],
         "available": [
-            "breathing", "campfire", "candle", "random", "cycle", "fade"
+            "breathing", "campfire", "candle", "random", "cycle", "fade", "profile"
         ]
     })
 
@@ -134,6 +136,9 @@ def start_effect(effect_name: str):
             to_hex = data.get("to", "FFFFFF")
             duration = int(data.get("duration", 5000))
             effect_runner.run_fade_effect(from_color=_parse_color(from_hex), to_color=_parse_color(to_hex), duration=duration)
+        elif effect_name == "profile":
+            duration = int(data.get("duration", 10000))
+            effect_runner.run_profile_effect(duration=duration)
         else:
             return jsonify({"error": f"unknown effect '{effect_name}'"}), 404
 

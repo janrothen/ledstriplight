@@ -163,6 +163,7 @@ Effects management:
 * `POST /effects/random` JSON: `{ "interval": 2000 }`
 * `POST /effects/cycle` JSON: `{ "duration": 2000, "colors": ["FF0000","00FF00","0000FF"] }`
 * `POST /effects/fade` JSON: `{ "from": "000000", "to": "FFFFFF", "duration": 5000 }`
+* `POST /effects/profile` JSON: `{ "duration": 10000 }` (fades from black to active profile color)
 
 **Starting the server:**
 ```bash
@@ -195,6 +196,10 @@ curl -X POST -H 'Content-Type: application/json' \
 # Fade from black to warm white over 10s
 curl -X POST -H 'Content-Type: application/json' \
   -d '{"from":"000000","to":"FFC864","duration":10000}' http://localhost:5000/effects/fade
+
+# Run current time-based profile color (10s fade in)
+curl -X POST -H 'Content-Type: application/json' \
+  -d '{"duration":12000}' http://localhost:5000/effects/profile
 
 # Stop current effect
 curl -X POST http://localhost:5000/effects/stop
