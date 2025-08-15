@@ -16,7 +16,8 @@ class LEDStripLightController(object):
         self._last_color = None
 
     def switch_on(self) -> None:
-        self.set_color(self._last_color or Color.WARM_YELLOW)
+        if not self.is_on():
+            self.set_color(self._last_color or Color.WARM_YELLOW)
 
     def switch_off(self) -> None:
         self.interrupt()
@@ -84,17 +85,17 @@ class LEDStripLightController(object):
         self.start_sequence(func, *args, **kwargs)
 
     def start_sequence(self, func: Callable, *args: Any, **kwargs: Any) -> None:
-        logging.info(f"Starting sequence: {func.__name__}")
+        logging.debug(f"Starting sequence: {func.__name__}")
         self._sequence = Thread(target=func, args=args, kwargs=kwargs)
         self.resume()
         self._sequence.start()
 
     def stop_current_sequence(self, timeout: int = 60) -> None:
-        if self._sequence is None:
-            logging.info("No sequence to stop.")
+        if not self.is_sequence_running():
+            logging.debug("No sequence to stop.")
             return
         
-        logging.info(f"Stopping sequence: {self._sequence.name}")
+        logging.debug(f"Stopping sequence: {self._sequence.name}")
         self.interrupt()
         try:
             self._sequence._sequence_stop_signal = True
@@ -103,7 +104,10 @@ class LEDStripLightController(object):
             pass
 
         self._reset_sequence()
-    #endregion
+
+    def is_sequence_running(self) -> bool:
+        return self._sequence is not None
 
     def _reset_sequence(self) -> None:
         self._sequence = None
+    #endregion    
