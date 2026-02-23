@@ -9,160 +9,189 @@ from led.effect_runner import EffectRunner
 from led.profile_manager import ProfileManager
 from led.color import Color
 
-app = Flask(__name__, static_folder='static', static_url_path='')
-config_manager = ConfigManager()
-pin_assignment = config_manager.get_pin_assignment()
-gpio_service = GPIOService(
-            red_pin=pin_assignment.red,
-            green_pin=pin_assignment.green,
-            blue_pin=pin_assignment.blue
-        )
-led_controller = LEDStripLightController(gpio_service=gpio_service)
-profile_manager = ProfileManager(config_manager)
-effect_runner = EffectRunner(led_controller, profile_manager)
-active_effect = {"name": None}
 
-# --- Static controller file serving ------------------------------------------
-@app.route("/")
-def index():
-    return send_from_directory('static', 'index.html')
+def create_app(
+    *,
+    config_manager: ConfigManager = None,
+    gpio_service: GPIOService = None,
+    led_controller: LEDStripLightController = None,
+    profile_manager: ProfileManager = None,
+    effect_runner: EffectRunner = None,
+) -> Flask:
+    app = Flask(__name__, static_folder='static', static_url_path='')
 
-# --- Basic LED control endpoints ---------------------------------------------
-@app.route("/on", methods=["POST"])
-def turn_on():
-    if not _is_led_active():
-        led_controller.switch_on()
-    return Response(status=200)
+    if config_manager is None:
+        config_manager = ConfigManager()
 
-@app.route("/off", methods=["POST"])
-def turn_off():
-    _stop_active_effect()
-    led_controller.switch_off()
-    return Response(status=200)
+    if led_controller is None:
+        if gpio_service is None:
+            pin_assignment = config_manager.get_pin_assignment()
+            gpio_service = GPIOService(
+                red_pin=pin_assignment.red,
+                green_pin=pin_assignment.green,
+                blue_pin=pin_assignment.blue,
+            )
+        led_controller = LEDStripLightController(gpio_service=gpio_service)
 
-@app.route("/status", methods=["GET"])
-def get_status():
-    return Response("1" if _is_led_active() else "0", status=200)
+    if profile_manager is None:
+        profile_manager = ProfileManager(config_manager)
 
-@app.route("/color", methods=["GET"])
-def get_color():
-    hex_color = led_controller.get_color().to_hex_with_hash()
-    return Response(hex_color, status=200)
+    if effect_runner is None:
+        effect_runner = EffectRunner(led_controller, profile_manager)
 
-@app.route("/color/<value>", methods=["POST"])
-def set_color(value):
-    _stop_active_effect()
-    color = Color.from_hex(value)
-    led_controller.set_color(color)
-    return Response(status=200)
+    active_effect = {"name": None}
 
-@app.route("/brightness", methods=["GET"])
-def get_brightness():
-    brightness = led_controller.get_brightness_percentage()
-    return Response(str(brightness), status=200)
+    def _parse_color(value: str) -> Color:
+        return Color.from_hex(value.lstrip('#'))
 
-@app.route("/brightness/<int:value>", methods=["POST"])
-def set_brightness(value):
-    _stop_active_effect()
-    led_controller.set_brightness(value)
-    return Response(status=200)
+    def _stop_active_effect() -> None:
+        """Interrupt any running effect thread and clear active effect state."""
+        if not led_controller.is_sequence_running():
+            active_effect["name"] = None
+            return
 
-def _parse_color(value: str):
-    return Color.from_hex(value.lstrip('#'))
+        try:
+            led_controller.stop_current_sequence()
+            active_effect["name"] = None
+        except Exception:
+            pass
 
-# --- Effect management -----------------------------------------------------
-@app.route("/effects", methods=["GET"])
-def list_effects():
-    return jsonify({
-        "active": _get_active_effect_name(),
-        "available": [
-            "breathing",
-            "campfire",
-            "candle",
-            "random",
-            "cycle",
-            "fade",
-            "profile"
-        ]
-    })
+    def _is_led_active() -> bool:
+        return led_controller.is_on() or led_controller.is_sequence_running()
 
-@app.route("/effects/stop", methods=["POST"])
-def stop_effect():
-    _stop_active_effect()
-    return jsonify({"status": "stopped"})
+    def _get_active_effect_name():
+        if not led_controller.is_sequence_running():
+            active_effect["name"] = None
+        return active_effect["name"]
 
-@app.route("/effects/<effect_name>", methods=["POST"])
-def start_effect(effect_name: str):
-    data = request.get_json(silent=True) or {}
-    try:
-        # Dispatch
-        if effect_name == "breathing":
-            color_hex = data.get("color", "FF0000")
-            duration = int(data.get("duration", 2000))
-            effect_runner.run_breathing_effect(color=_parse_color(color_hex), duration=duration)
-        elif effect_name == "campfire":
-            kwargs = {k: data[k] for k in [
-                "duration", "update_hz", "min_brightness", "max_brightness", "hue_jitter",
-                "saturation", "spark_chance", "spark_gain", "tau_ms", "gamma"
-            ] if k in data}
-            if "duration" in kwargs:
-                kwargs["duration"] = int(kwargs["duration"])
-            effect_runner.run_campfire_effect(**kwargs)
-        elif effect_name == "candle":
-            kwargs = {k: data[k] for k in [
-                "duration", "update_hz", "min_brightness", "max_brightness", "hue_jitter",
-                "saturation", "spark_chance", "spark_gain", "tau_ms", "gamma"
-            ] if k in data}
-            if "duration" in kwargs:
-                kwargs["duration"] = int(kwargs["duration"])
-            effect_runner.run_candle_effect(**kwargs)
-        elif effect_name == "random":
-            interval = int(data.get("interval", 2000))
-            effect_runner.run_random_effect(interval=interval)
-        elif effect_name == "cycle":
-            duration = int(data.get("duration", 2000))
-            colors_raw = data.get("colors")
-            colors = None
-            if colors_raw:
-                if not isinstance(colors_raw, list):
-                    raise ValueError("colors must be a list of hex strings")
-                colors = [_parse_color(c) for c in colors_raw]
-            effect_runner.run_cycle_effect(colors=colors, duration=duration)
-        elif effect_name == "fade":
-            from_hex = data.get("from", "000000")
-            to_hex = data.get("to", "FFFFFF")
-            duration = int(data.get("duration", 5000))
-            effect_runner.run_fade_effect(from_color=_parse_color(from_hex), to_color=_parse_color(to_hex), duration=duration)
-        elif effect_name == "profile":
-            duration = int(data.get("duration", 10000))
-            effect_runner.run_profile_effect(duration=duration)
-        else:
-            return jsonify({"error": f"unknown effect '{effect_name}'"}), 404
+    # --- Static controller file serving --------------------------------------
+    @app.route("/")
+    def index():
+        return send_from_directory('static', 'index.html')
 
-        active_effect["name"] = effect_name
-        return jsonify({"status": "started", "effect": effect_name, "params": data})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+    # --- Basic LED control endpoints -----------------------------------------
+    @app.route("/on", methods=["POST"])
+    def turn_on():
+        if not _is_led_active():
+            led_controller.switch_on()
+        return Response(status=200)
 
-def _stop_active_effect():
-    """Interrupt any running effect thread and clear active effect state."""
-    if not led_controller.is_sequence_running():
-        active_effect["name"] = None
-        return
+    @app.route("/off", methods=["POST"])
+    def turn_off():
+        _stop_active_effect()
+        led_controller.switch_off()
+        return Response(status=200)
 
-    try:
-        led_controller.stop_current_sequence()
-        active_effect["name"] = None
-    except Exception:
-        pass
+    @app.route("/status", methods=["GET"])
+    def get_status():
+        return Response("1" if _is_led_active() else "0", status=200)
 
-def _is_led_active():
-    return led_controller.is_on() or led_controller.is_sequence_running()
+    @app.route("/color", methods=["GET"])
+    def get_color():
+        hex_color = led_controller.get_color().to_hex_with_hash()
+        return Response(hex_color, status=200)
 
-def _get_active_effect_name():
-    if not led_controller.is_sequence_running():
-        active_effect["name"] = None
-    return active_effect["name"]
+    @app.route("/color/<value>", methods=["POST"])
+    def set_color(value):
+        _stop_active_effect()
+        color = Color.from_hex(value)
+        led_controller.set_color(color)
+        return Response(status=200)
+
+    @app.route("/brightness", methods=["GET"])
+    def get_brightness():
+        brightness = led_controller.get_brightness_percentage()
+        return Response(str(brightness), status=200)
+
+    @app.route("/brightness/<int:value>", methods=["POST"])
+    def set_brightness(value):
+        _stop_active_effect()
+        led_controller.set_brightness(value)
+        return Response(status=200)
+
+    # --- Effect management ----------------------------------------------------
+    @app.route("/effects", methods=["GET"])
+    def list_effects():
+        return jsonify({
+            "active": _get_active_effect_name(),
+            "available": [
+                "breathing",
+                "campfire",
+                "candle",
+                "random",
+                "cycle",
+                "fade",
+                "profile"
+            ]
+        })
+
+    @app.route("/effects/stop", methods=["POST"])
+    def stop_effect():
+        _stop_active_effect()
+        return jsonify({"status": "stopped"})
+
+    @app.route("/effects/<effect_name>", methods=["POST"])
+    def start_effect(effect_name: str):
+        data = request.get_json(silent=True) or {}
+        try:
+            # Dispatch
+            if effect_name == "breathing":
+                color_hex = data.get("color", "FF0000")
+                duration = int(data.get("duration", 2000))
+                effect_runner.run_breathing_effect(color=_parse_color(color_hex), duration=duration)
+            elif effect_name == "campfire":
+                kwargs = {k: data[k] for k in [
+                    "duration", "update_hz", "min_brightness", "max_brightness", "hue_jitter",
+                    "saturation", "spark_chance", "spark_gain", "tau_ms", "gamma"
+                ] if k in data}
+                if "duration" in kwargs:
+                    kwargs["duration"] = int(kwargs["duration"])
+                effect_runner.run_campfire_effect(**kwargs)
+            elif effect_name == "candle":
+                kwargs = {k: data[k] for k in [
+                    "duration", "update_hz", "min_brightness", "max_brightness", "hue_jitter",
+                    "saturation", "spark_chance", "spark_gain", "tau_ms", "gamma"
+                ] if k in data}
+                if "duration" in kwargs:
+                    kwargs["duration"] = int(kwargs["duration"])
+                effect_runner.run_candle_effect(**kwargs)
+            elif effect_name == "random":
+                interval = int(data.get("interval", 2000))
+                effect_runner.run_random_effect(interval=interval)
+            elif effect_name == "cycle":
+                duration = int(data.get("duration", 2000))
+                colors_raw = data.get("colors")
+                colors = None
+                if colors_raw:
+                    if not isinstance(colors_raw, list):
+                        raise ValueError("colors must be a list of hex strings")
+                    colors = [_parse_color(c) for c in colors_raw]
+                effect_runner.run_cycle_effect(colors=colors, duration=duration)
+            elif effect_name == "fade":
+                from_hex = data.get("from", "000000")
+                to_hex = data.get("to", "FFFFFF")
+                duration = int(data.get("duration", 5000))
+                effect_runner.run_fade_effect(
+                    from_color=_parse_color(from_hex),
+                    to_color=_parse_color(to_hex),
+                    duration=duration,
+                )
+            elif effect_name == "profile":
+                duration = int(data.get("duration", 10000))
+                effect_runner.run_profile_effect(duration=duration)
+            else:
+                return jsonify({"error": f"unknown effect '{effect_name}'"}), 404
+
+            active_effect["name"] = effect_name
+            return jsonify({"status": "started", "effect": effect_name, "params": data})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    app.config["LED_CONTROLLER"] = led_controller
+    app.config["EFFECT_RUNNER"] = effect_runner
+
+    return app
+
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    create_app().run(host="0.0.0.0", port=5000)
