@@ -51,7 +51,7 @@ def create_app(
             return
 
         try:
-            led_controller.stop_current_sequence()
+            led_controller.stop_current_sequence(timeout=2)
             active_effect["name"] = None
         except Exception:
             pass

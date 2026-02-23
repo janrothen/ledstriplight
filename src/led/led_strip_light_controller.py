@@ -90,7 +90,7 @@ class LEDStripLightController(object):
         self.resume()
         self._sequence.start()
 
-    def stop_current_sequence(self, timeout: int = 60) -> None:
+    def stop_current_sequence(self, timeout: int = 5) -> None:
         if not self.is_sequence_running():
             logging.debug("No sequence to stop.")
             return
