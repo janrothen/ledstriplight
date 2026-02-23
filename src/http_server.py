@@ -74,7 +74,7 @@ def _parse_color(value: str):
 @app.route("/effects", methods=["GET"])
 def list_effects():
     return jsonify({
-        "active": active_effect["name"],
+        "active": _get_active_effect_name(),
         "available": [
             "breathing",
             "campfire",
@@ -147,6 +147,7 @@ def start_effect(effect_name: str):
 def _stop_active_effect():
     """Interrupt any running effect thread and clear active effect state."""
     if not led_controller.is_sequence_running():
+        active_effect["name"] = None
         return
 
     try:
@@ -157,6 +158,11 @@ def _stop_active_effect():
 
 def _is_led_active():
     return led_controller.is_on() or led_controller.is_sequence_running()
+
+def _get_active_effect_name():
+    if not led_controller.is_sequence_running():
+        active_effect["name"] = None
+    return active_effect["name"]
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
