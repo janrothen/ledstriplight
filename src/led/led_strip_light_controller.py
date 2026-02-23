@@ -86,7 +86,7 @@ class LEDStripLightController(object):
 
     def start_sequence(self, func: Callable, *args: Any, **kwargs: Any) -> None:
         logging.debug(f"Starting sequence: {func.__name__}")
-        self._sequence = Thread(target=func, args=args, kwargs=kwargs)
+        self._sequence = Thread(target=self._run_sequence, args=(func, args, kwargs))
         self.resume()
         self._sequence.start()
 
@@ -106,8 +106,19 @@ class LEDStripLightController(object):
         self._reset_sequence()
 
     def is_sequence_running(self) -> bool:
-        return self._sequence is not None
+        if self._sequence is None:
+            return False
+        if self._sequence.is_alive():
+            return True
+        self._reset_sequence()
+        return False
 
     def _reset_sequence(self) -> None:
         self._sequence = None
+
+    def _run_sequence(self, func: Callable, args: Any, kwargs: Any) -> None:
+        try:
+            func(*args, **kwargs)
+        finally:
+            self._reset_sequence()
     #endregion    

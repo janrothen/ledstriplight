@@ -135,6 +135,7 @@ class TestLEDStripLightController:
     def test_start_sequence(self, mock_thread_class, led_controller):
         """Test starting a sequence."""
         mock_thread = Mock()
+        mock_thread.is_alive.return_value = True
         mock_thread_class.return_value = mock_thread
         
         def dummy_effect():
@@ -144,9 +145,8 @@ class TestLEDStripLightController:
         
         # Verify thread was created with correct arguments
         mock_thread_class.assert_called_once_with(
-            target=dummy_effect, 
-            args=("arg1", "arg2"), 
-            kwargs={"kwarg1": "value1"}
+            target=led_controller._run_sequence,
+            args=(dummy_effect, ("arg1", "arg2"), {"kwarg1": "value1"})
         )
         mock_thread.start.assert_called_once()
         assert led_controller._sequence == mock_thread
@@ -163,6 +163,7 @@ class TestLEDStripLightController:
         """Test stopping sequence with timeout."""
         mock_thread = Mock()
         mock_thread.name = "test_sequence"
+        mock_thread.is_alive.return_value = True
         mock_thread_class.return_value = mock_thread
         
         # Start a sequence
@@ -185,6 +186,7 @@ class TestLEDStripLightController:
         """Test running a sequence (stop + start)."""
         mock_thread = Mock()
         mock_thread.name = "test_sequence"
+        mock_thread.is_alive.return_value = True
         mock_thread_class.return_value = mock_thread
         
         def dummy_effect():
@@ -193,8 +195,15 @@ class TestLEDStripLightController:
         led_controller.run_sequence(dummy_effect, "test_arg")
         
         mock_thread_class.assert_called_once_with(
-            target=dummy_effect,
-            args=("test_arg",),
-            kwargs={}
+            target=led_controller._run_sequence,
+            args=(dummy_effect, ("test_arg",), {})
         )
         mock_thread.start.assert_called_once()
+
+    def test_is_sequence_running_resets_finished_sequence(self, led_controller):
+        mock_sequence = Mock()
+        mock_sequence.is_alive.return_value = False
+        led_controller._sequence = mock_sequence
+
+        assert not led_controller.is_sequence_running()
+        assert led_controller._sequence is None
